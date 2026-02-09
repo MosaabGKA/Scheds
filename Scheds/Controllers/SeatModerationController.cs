@@ -13,11 +13,13 @@ namespace Scheds.MVC.Controllers
     {
         private readonly ISeatModerationService _seatModerationService;
         private readonly FrontendSettings _frontend;
+        private readonly IWebHostEnvironment _env;
 
-        public SeatModerationController(ISeatModerationService seatModerationService, IOptions<FrontendSettings> frontend)
+        public SeatModerationController(ISeatModerationService seatModerationService, IOptions<FrontendSettings> frontend, IWebHostEnvironment env)
         {
             _seatModerationService = seatModerationService ?? throw new ArgumentNullException(nameof(seatModerationService));
             _frontend = frontend.Value;
+            _env = env;
         }
 
         [HttpGet]
@@ -29,7 +31,23 @@ namespace Scheds.MVC.Controllers
         [HttpGet("~/SeatModeration")]
         public IActionResult ViewIndex()
         {
+            if (string.IsNullOrWhiteSpace(_frontend.Url))
+            {
+                return ServeSpaIndex();
+            }
+
             return Redirect($"{_frontend.Url.TrimEnd('/')}/seat-moderation");
+        }
+
+        private IActionResult ServeSpaIndex()
+        {
+            var indexPath = Path.Combine(_env.WebRootPath ?? string.Empty, "index.html");
+            if (!System.IO.File.Exists(indexPath))
+            {
+                return NotFound();
+            }
+
+            return PhysicalFile(indexPath, "text/html");
         }
 
         [HttpPost("check-seats")]

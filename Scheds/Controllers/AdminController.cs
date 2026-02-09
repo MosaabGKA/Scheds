@@ -7,46 +7,69 @@ namespace Scheds.MVC.Controllers
     public class AdminController : Controller
     {
         private readonly FrontendSettings _frontend;
+        private readonly IWebHostEnvironment _env;
 
-        public AdminController(IOptions<FrontendSettings> frontend)
+        public AdminController(IOptions<FrontendSettings> frontend, IWebHostEnvironment env)
         {
             _frontend = frontend.Value;
+            _env = env;
         }
 
         public IActionResult Login()
         {
-            return Redirect($"{_frontend.Url.TrimEnd('/')}/admin/login");
+            return RedirectOrServeSpa("/admin/login");
         }
 
         [HttpPost]
         public IActionResult Login(string password)
         {
-            return Redirect($"{_frontend.Url.TrimEnd('/')}/admin/login");
+            return RedirectOrServeSpa("/admin/login");
         }
 
         public IActionResult Logout()
         {
-            return Redirect($"{_frontend.Url.TrimEnd('/')}/admin/login");
+            return RedirectOrServeSpa("/admin/login");
         }
 
         public IActionResult Index()
         {
-            return Redirect($"{_frontend.Url.TrimEnd('/')}/admin");
+            return RedirectOrServeSpa("/admin");
         }
 
         public IActionResult Analytics()
         {
-            return Redirect($"{_frontend.Url.TrimEnd('/')}/admin/analytics");
+            return RedirectOrServeSpa("/admin/analytics");
         }
 
         public IActionResult GenerationHistory()
         {
-            return Redirect($"{_frontend.Url.TrimEnd('/')}/admin/generations");
+            return RedirectOrServeSpa("/admin/generations");
         }
 
         public IActionResult GenerationDetails(int id)
         {
-            return Redirect($"{_frontend.Url.TrimEnd('/')}/admin/generations/{id}");
+            return RedirectOrServeSpa($"/admin/generations/{id}");
+        }
+
+        private IActionResult RedirectOrServeSpa(string path)
+        {
+            if (string.IsNullOrWhiteSpace(_frontend.Url))
+            {
+                return ServeSpaIndex();
+            }
+
+            return Redirect($"{_frontend.Url.TrimEnd('/')}{path}");
+        }
+
+        private IActionResult ServeSpaIndex()
+        {
+            var indexPath = Path.Combine(_env.WebRootPath ?? string.Empty, "index.html");
+            if (!System.IO.File.Exists(indexPath))
+            {
+                return NotFound();
+            }
+
+            return PhysicalFile(indexPath, "text/html");
         }
     }
 }
